@@ -1,82 +1,124 @@
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-// Патерн Стратегія
-class StrategyExample {
-    static void executeStrategy(Runnable strategy) {
-        strategy.run();
-    }
-}
+public class patterns {
 
-// Патерн Фабричний метод
-class Product {
-    String name;
-
-    public Product(String name) {
-        this.name = name;
+    interface Strategy {
+        void execute();
     }
 
-    void show() {
-        System.out.println("Продукт: " + name);
-    }
-}
-
-class Factory {
-    static Product create(Supplier<Product> factoryMethod) {
-        return factoryMethod.get();
-    }
-}
-
-// Патерн Декоратор
-class Decorator {
-    static Consumer<String> wrap(Consumer<String> base, Consumer<String> extra) {
-        return text -> {
-            base.accept(text);
-            extra.accept(text);
-        };
-    }
-}
-
-// Патерн Навколишнє виконання (Execute Around)
-class Resource implements AutoCloseable {
-    void open() {
-        System.out.println("Ресурс відкрито");
-    }
-
-    void work() {
-        System.out.println("Робота з ресурсом");
-    }
-
-    public void close() {
-        System.out.println("Ресурс закрито");
-    }
-}
-
-class ExecuteAround {
-    static void useResource(Consumer<Resource> action) {
-        try (Resource resource = new Resource()) {
-            resource.open();
-            action.accept(resource);
+    static class ConcreteStrategyOne implements Strategy {
+        @Override
+        public void execute() {
+            System.out.println("Стратегія 1 проста дія");
         }
     }
-}
 
-public class patterns {
+    static class ConcreteStrategyTwo implements Strategy {
+        @Override
+        public void execute() {
+            System.out.println("Стратегія 2 інша дія");
+        }
+    }
+
+    static class Context {
+        private Strategy strategy;
+
+        public Context(Strategy strategy) {
+            this.strategy = strategy;
+        }
+
+        public void executeStrategy() {
+            strategy.execute();
+        }
+    }
+
+    interface Product {
+        void show();
+    }
+
+    static class ConcreteProduct implements Product {
+        private String name;
+
+        public ConcreteProduct(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public void show() {
+            System.out.println("Продукт: " + name);
+        }
+    }
+
+    static class Factory {
+        public static Product createProduct(Supplier<Product> supplier) {
+            return supplier.get();
+        }
+    }
+
+    interface Notifier {
+        void notify(String message);
+    }
+
+    static class BaseNotifier implements Notifier {
+        @Override
+        public void notify(String message) {
+            System.out.println("Повідомлення: " + message);
+        }
+    }
+
+    static class LengthNotifierDecorator implements Notifier {
+        private Notifier notifier;
+
+        public LengthNotifierDecorator(Notifier notifier) {
+            this.notifier = notifier;
+        }
+
+        @Override
+        public void notify(String message) {
+            notifier.notify(message);
+            System.out.println("Довжина: " + message.length());
+        }
+    }
+
+    static class Resource implements AutoCloseable {
+        public void open() {
+            System.out.println("Ресурс відкрито");
+        }
+
+        public void work() {
+            System.out.println("Робота з ресурсом");
+        }
+
+        @Override
+        public void close() {
+            System.out.println("Ресурс закрито");
+        }
+    }
+
+    static class ResourceHelper {
+        public static void useResource(Consumer<Resource> action) {
+            try (Resource resource = new Resource()) {
+                resource.open();
+                action.accept(resource);
+            }
+        }
+    }
+
     public static void main(String[] args) {
+        Context context = new Context(new ConcreteStrategyOne());
+        context.executeStrategy();
 
-        Runnable strategy1 = () -> System.out.println("Стратегія 1: проста дія");
-        Runnable strategy2 = () -> System.out.println("Стратегія 2: інша дія");
-        StrategyExample.executeStrategy(strategy1);
-        StrategyExample.executeStrategy(strategy2);
+        context = new Context(new ConcreteStrategyTwo());
+        context.executeStrategy();
 
-        Product product = Factory.create(() -> new Product("Ноутбук"));
+        Product product = Factory.createProduct(() -> new ConcreteProduct("Ноутбук"));
         product.show();
 
-        Consumer<String> base = text -> System.out.println("Повідомлення: " + text);
-        Consumer<String> extra = text -> System.out.println("Довжина: " + text.length());
-        Consumer<String> combined = Decorator.wrap(base, extra);
-        combined.accept("Привіт!");
+        Notifier notifier = new BaseNotifier();
+        Notifier decoratedNotifier = new LengthNotifierDecorator(notifier);
+        decoratedNotifier.notify("Привіт!");
 
-        ExecuteAround.useResource(Resource::work);
+        ResourceHelper.useResource(Resource::work);
     }
 }
